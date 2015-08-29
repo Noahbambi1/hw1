@@ -34,6 +34,9 @@ typedef struct fun_desc {
   char *doc;
 } fun_desc_t;
 
+
+
+
 fun_desc_t cmd_table[] = {
   {cmd_help, "?", "show this help menu"},
   {cmd_quit, "quit", "quit the command shell"},
@@ -81,21 +84,7 @@ void init_shell()
     tcsetpgrp(shell_terminal, shell_pgid);
     tcgetattr(shell_terminal, &shell_tmodes);
   }
-
-
-
-
-
-
-
-
-
-
   /** YOUR CODE HERE */
-  int cmd_cd(tok_t arg[]) {
-    chdir(arg[0]);
-    return 0;
-  }
 }
 
 /**

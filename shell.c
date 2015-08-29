@@ -23,6 +23,12 @@ int cmd_quit(tok_t arg[]) {
   return 1;
 }
 
+int cmd_cd(tok_t arg[]) {
+  chdir(arg[0]);
+  return 0;
+}
+
+
 int cmd_help(tok_t arg[]);
 
 
@@ -34,27 +40,11 @@ typedef struct fun_desc {
   char *doc;
 } fun_desc_t;
 
-int cmd_cd(tok_t arg[]) {
-  chdir(arg[0]);
-  return 0;
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 fun_desc_t cmd_table[] = {
   {cmd_help, "?", "show this help menu"},
   {cmd_quit, "quit", "quit the command shell"},
+  {cmd_cd, "cd", "change directory"},	
 };
 
 int cmd_help(tok_t arg[]) {
@@ -121,6 +111,7 @@ process* create_process(char* inputString)
 
 
 
+
 int shell (int argc, char *argv[]) {
   char *s = malloc(INPUT_STRING_SIZE+1);			/* user input string */
   tok_t *t;			/* tokens parsed from input */
@@ -144,7 +135,14 @@ int shell (int argc, char *argv[]) {
     fundex = lookup(t[0]); /* Is first token a shell literal */
     if(fundex >= 0) cmd_table[fundex].fun(&t[1]);
     else {
-      fprintf(stdout, "This shell only supports built-ins. Replace this to run programs as commands.\n");
+		cpid=fork();
+		if(cpid==0)
+		{
+			char *temp []={s, t[1], t[2]};
+			execvp(s, temp);
+			fprintf(stdout, "%s is t2", t);
+			exit(0);
+		}	
     }
     getcwd(cwd,PATH_MAX);
     fprintf(stdout, "%d %s: " , ++lineNum, cwd);
