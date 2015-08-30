@@ -24,9 +24,16 @@ int cmd_quit(tok_t arg[]) {
 }
 
 int cmd_cd(tok_t arg[]) {
-  chdir(arg[0]);
-  return 0;
+  if (arg[0] == NULL) {
+    fprintf(stderr, "error: expected argument to \"cd\"\n");
+  } else {
+    if (chdir(arg[0]) != 0) {
+      perror("error");
+    }
+  }
+  return 1;
 }
+
 
 
 int cmd_help(tok_t arg[]);
@@ -110,8 +117,6 @@ process* create_process(char* inputString)
 }
 
 
-
-
 int shell (int argc, char *argv[]) {
   char *s = malloc(INPUT_STRING_SIZE+1);			/* user input string */
   tok_t *t;			/* tokens parsed from input */
@@ -121,6 +126,8 @@ int shell (int argc, char *argv[]) {
   pid_t ppid = getppid();	/* get parents PID */
   pid_t cpid, tcpid, cpgid;
   char cwd[PATH_MAX];
+  
+  //char* output;
 
   init_shell();
 
@@ -140,12 +147,22 @@ int shell (int argc, char *argv[]) {
 		{
 			char *temp []={s, t[1], t[2]};
 			execvp(s, temp);
-			fprintf(stdout, "%s is t2", t);
+			fprintf("\n", stdout );
 			exit(0);
 		}	
     }
     getcwd(cwd,PATH_MAX);
     fprintf(stdout, "%d %s: " , ++lineNum, cwd);
+    //output = execlp("ls");
+    //fprintf(stdout, "%d %s: " , ++lineNum, output);
+    //fprintf("%s is path", $PATH);
   }
   return 0;
 }
+
+int findPath() {
+
+
+
+}
+
