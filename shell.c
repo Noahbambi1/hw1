@@ -117,6 +117,8 @@ process* create_process(char* inputString)
 }
 
 
+
+
 int shell (int argc, char *argv[]) {
   char *s = malloc(INPUT_STRING_SIZE+1);			/* user input string */
   tok_t *t;			/* tokens parsed from input */
@@ -126,8 +128,6 @@ int shell (int argc, char *argv[]) {
   pid_t ppid = getppid();	/* get parents PID */
   pid_t cpid, tcpid, cpgid;
   char cwd[PATH_MAX];
-  
-  //char* output;
 
   init_shell();
 
@@ -145,24 +145,47 @@ int shell (int argc, char *argv[]) {
 		cpid=fork();
 		if(cpid==0)
 		{
-			char *temp []={s, t[1], t[2]};
-			execvp(s, temp);
-			fprintf("\n", stdout );
+			char *temp []={s, t[1], t[2]};		
+			//execvp(s, temp);					
+			findPathExec(t[0], t);
+			//fprintf(stdout, "%s is t2", t);
 			exit(0);
 		}	
     }
     getcwd(cwd,PATH_MAX);
+    
     fprintf(stdout, "%d %s: " , ++lineNum, cwd);
-    //output = execlp("ls");
-    //fprintf(stdout, "%d %s: " , ++lineNum, output);
-    //fprintf("%s is path", $PATH);
+    
+    //printf("echo $PATH");
   }
   return 0;
 }
 
-int findPath() {
+int findPathExec(char *command, char **argv){
 
+	tok_t *pathTok;
+	char* path = getenv("PATH");
+	pathTok = getToks(path);
+    //fprintf(stdout, "%s: %s \n" , pathTok, command);
+    
+    printf("here this one ");
+    char temp[PATH_MAX];
+    
+    int testExecv= (execv(command,argv));
+    
+    if( testExecv==-1) 
+    { 
+     	 for(int i = 0; i < MAXTOKS && path[i]; i++) //adds all the pieces from the above pointer for the path resolution
+		 {
+		   strcpy(temp, pathTok[i]);
+		   strcat(temp, "/");
+		   strcat(temp, command);
+		   execv(temp,argv);
+		 }
+	   }
 
-
+	return 1;
 }
+
+
 
