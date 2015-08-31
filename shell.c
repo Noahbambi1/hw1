@@ -9,6 +9,7 @@
 #include <sys/wait.h>
 #include <stdbool.h>
 #include <linux/limits.h>
+#include <fcntl.h>
 
 #define INPUT_STRING_SIZE 80
 
@@ -137,21 +138,29 @@ int shell (int argc, char *argv[]) {
   //fprintf(stdout, "%d: ", lineNum);
   getcwd(cwd,PATH_MAX);
   fprintf(stdout, "%d %s: " , lineNum, cwd);
+
   while ((s = freadln(stdin))){
     t = getToks(s); /* break the line into tokens */
     fundex = lookup(t[0]); /* Is first token a shell literal */
     if(fundex >= 0) cmd_table[fundex].fun(&t[1]);
-    else {
-		cpid=fork();
+    else {    	
+		cpid=fork();		
 		if(cpid==0)
 		{
-			char *temp []={s, t[1], t[2]};		
+			//char *temp []={s, t[1], t[2]};		
 			//execvp(s, temp);					
 			findPathExec(t[0], t);
 			//fprintf(stdout, "%s is t2", t);
 			exit(0);
-		}	
+		}
+		else if(cpid>0)
+		{
+			int status;
+			waitpid(cpid, &status, 0);
+		}
+		else if(cpid<0)printf("error in child process");
     }
+    //findPathExec(t[0], t);
     getcwd(cwd,PATH_MAX);
     
     fprintf(stdout, "%d %s: " , ++lineNum, cwd);
@@ -161,28 +170,71 @@ int shell (int argc, char *argv[]) {
   return 0;
 }
 
-int findPathExec(char *command, char **argv){
+int findPathExec(char *command, tok_t *t){
 
 	tok_t *pathTok;
 	char* path = getenv("PATH");
 	pathTok = getToks(path);
     //fprintf(stdout, "%s: %s \n" , pathTok, command);
     
-    printf("here this one ");
-    char temp[PATH_MAX];
+    int i = 0; 
+    int index;
+    bool read = false;
+    bool write = false;
+    //check if > is in string argv
+    while(t[i])
+    {
+    	if (*t[i]=='>')
+    	{
+    		write = true;
+    		index = i;
+    		t[i] = NULL;
+    	}
+    	else if (*t[i]=='<')
+    	{
+    	   	read = true;
+    	   	index = i;
+    	   	t[i] = NULL;
+    	}
+    	i++;
+    }
     
-    int testExecv= (execv(command,argv));
+    //fprintf(stdout, "%d %s: " , index, read);
     
-    if( testExecv==-1) 
-    { 
-     	 for(int i = 0; i < MAXTOKS && path[i]; i++) //adds all the pieces from the above pointer for the path resolution
-		 {
-		   strcpy(temp, pathTok[i]);
-		   strcat(temp, "/");
-		   strcat(temp, command);
-		   execv(temp,argv);
-		 }
-	   }
+    if(write == true)
+    {
+		 //First, we're going to open a file
+		int file = open(t[index+1], O_APPEND | O_WRONLY);
+		//FILE *file = fopen("temp.txt", "a+");t[index + 1]
+		if(file < 0)    return 1;
+	 
+		//Now we redirect standard output to the file using dup2
+		if(dup2(file,1) < 0)    return 1;
+ 	}
+ 	else if(read == true)
+ 	{
+		int file = open(t[index+1], O_APPEND | O_WRONLY);
+		if(file < 0)    return 1;
+		if(dup2(file,0) < 0)    return 1;
+ 	}
+ 	
+ 	//else
+ 	//{   
+		char temp[PATH_MAX];
+		int j;
+		int testExecv= (execv(command,t));
+		
+		if( testExecv==-1) 
+		{ 
+		 	 for(j = 0; j < MAXTOKS && path[j]; j++) //adds all the pieces from the above pointer for the path resolution
+			 {
+			   strcpy(temp, pathTok[j]);
+			   strcat(temp, "/");
+			   strcat(temp, command);
+			   execv(temp,t);
+			 }
+		}
+	//}
 
 	return 1;
 }
